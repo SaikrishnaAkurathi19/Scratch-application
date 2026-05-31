@@ -19,12 +19,12 @@ export default function ListDetailScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
 
   // Resolve list metadata
-  const smartViews: Record<string, { name: string; icon: string; color: string }> = {
-    today:    { name: 'Today',         icon: 'home',           color: Colors.primary },
-    upcoming: { name: 'Upcoming',      icon: 'calendar-sharp', color: '#3B82F6' },
-    high:     { name: 'High Priority', icon: 'alert-triangle', color: Colors.high },
-    all:      { name: 'Completed',     icon: 'checkmark-done', color: Colors.low },
-  };
+  const smartViews = {
+  today:    { name: 'Today',         icon: 'home',           color: Colors.primary },
+  upcoming: { name: 'Upcoming',      icon: 'calendar-sharp', color: '#3B82F6' },
+  high:     { name: 'High Priority', icon: 'alert-circle', color: Colors.high },
+  all:      { name: 'Completed',     icon: 'checkmark-circle', color: Colors.low },
+};
 
   const isSmartView = id in smartViews;
   const userList = lists.find(l => l.id === id);
@@ -51,7 +51,9 @@ export default function ListDetailScreen() {
     useEffect(() => {
       load();
     }, [load]);
-
+    
+    console.log('LIST ICON:', listMeta?.icon);
+    
   if (!listMeta) return null;
 
   return (
