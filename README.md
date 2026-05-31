@@ -1,131 +1,334 @@
 # Scratch — To-Do & Reminder App
-## Fixed & Production-Ready Build
+
+Modern offline-first task management application built with Expo, React Native, SQLite, Zustand, and Expo Notifications.
+
+Version: v1.0.0
+
+Status: Stable Release
 
 ---
 
-## What Was Fixed
+## Features
 
-### Critical Bugs Resolved
+* Create, Edit and Delete Tasks
+* Smart Views
 
-| # | Bug | Fix Applied |
-|---|-----|-------------|
-| 1 | `expo-sqlite` missing `SQLiteDatabase` module | Pinned to `~14.0.6` (the first stable release with sync API) |
-| 2 | Missing `assets/` folder | Created `icon.png`, `adaptive-icon.png`, `splash.png`, `notification-icon.png` |
-| 3 | `babel.config.js` — NativeWind v4 wrong preset format | Changed to `['babel-preset-expo', { jsxImportSource: 'nativewind' }]` |
-| 4 | `NotificationService.ts` used `SchedulableTriggerInputTypes` enum (not in v0.28) | Replaced with plain object trigger format compatible with expo-notifications 0.28 |
-| 5 | `app.json` referenced `UIBackgroundModes` (iOS-only key in wrong format) | Removed; replaced with correct iOS section |
-| 6 | `app.json` missing `POST_NOTIFICATIONS` Android 13+ permission | Added |
-| 7 | `db/client.ts` used async dynamic `import()` inside sync function | Replaced with inline data, made fully synchronous |
-| 8 | `lists.tsx` used `FlatList` with `data={[]}` + `renderItem={null}` | Replaced with `ScrollView` |
-| 9 | `app/_layout.tsx` missing `list/new` screen registration | Added `list/new` Stack.Screen |
-| 10 | `_layout.tsx` no error boundary around `initDatabase()` | Wrapped in try/catch |
-| 11 | `taskStore.ts` — all DB calls unguarded | Added try/catch to every operation |
-| 12 | `index.tsx` progress bar logic incorrect | Fixed calculation to include completed tasks in total |
-| 13 | `uuid.ts` hard-imported `react-native-get-random-values` at module level | Changed to lazy require with fallback |
-| 14 | `package.json` used `~14.0.0` for expo-sqlite (broken build path) | Pinned to `~14.0.6` |
-| 15 | `newArchEnabled` not explicitly disabled (causes build failures) | Set `"newArchEnabled": false` |
-| 16 | `tailwindcss` unpinned (v4 incompatible with NativeWind 4) | Pinned to `3.4.15` |
-| 17 | `.npmrc` had only `ignore-scripts=false` | Added `legacy-peer-deps=true` to fix peer dep conflicts |
-| 18 | `tsconfig.json` missing `skipLibCheck` | Added; prevents TS errors from third-party types |
-| 19 | `shouldSetBadge: true` in notification handler (requires extra permission) | Set to `false` |
-| 20 | `router.push()` calls missing `as any` TypeScript cast for dynamic paths | Added throughout |
-
----
-
-## Quick Start (Development)
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Start development server
-npx expo start
-
-# 3. Scan QR code with Expo Go app on Android
-```
-
----
-
-## Build APK (Production-Ready)
-
-### Option A: EAS Build (Recommended — cloud build, no Android SDK needed)
-
-```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Login to Expo account (free)
-eas login
-
-# Build APK for sideloading / testing
-eas build --platform android --profile preview
-
-# Download APK from the URL printed after build completes
-```
-
-### Option B: Local Build (requires Android Studio + JDK 17)
-
-```bash
-# Generate native Android project
-npx expo prebuild --platform android --clean
-
-# Build debug APK
-cd android && ./gradlew assembleDebug
-
-# APK will be at:
-# android/app/build/outputs/apk/debug/app-debug.apk
-```
-
----
-
-## Project Structure
-
-```
-scratch/
-├── app/                    # Expo Router screens
-│   ├── (tabs)/             # Bottom tab navigator
-│   │   ├── index.tsx       # Today view ✅ Fixed
-│   │   ├── upcoming.tsx    # Upcoming 7 days
-│   │   ├── lists.tsx       # All lists ✅ Fixed
-│   │   ├── search.tsx      # Search
-│   │   └── settings.tsx    # Progress/Stats
-│   ├── task/
-│   │   ├── [id].tsx        # Task detail / edit
-│   │   └── new.tsx         # New task screen
-│   ├── list/
-│   │   └── [id].tsx        # List detail (handles smart views too)
-│   │   └── new.tsx         # New list screen
-│   └── _layout.tsx         # Root layout ✅ Fixed
-├── assets/                 # ✅ Created (icon, splash, notification-icon)
-├── db/
-│   ├── client.ts           # ✅ Fixed (sync seed, error handling)
-│   └── queries/            # All DB query functions
-├── services/
-│   └── NotificationService.ts  # ✅ Fixed (compatible trigger format)
-├── stores/
-│   └── taskStore.ts        # ✅ Fixed (error handling on all ops)
-├── utils/
-│   └── uuid.ts             # ✅ Fixed (safe fallback)
-├── package.json            # ✅ Fixed (pinned versions)
-├── babel.config.js         # ✅ Fixed (NativeWind v4 preset)
-├── app.json                # ✅ Fixed (permissions, newArchEnabled)
-├── eas.json                # ✅ Fixed (build profiles)
-└── .npmrc                  # ✅ Fixed (legacy-peer-deps)
-```
+  * Today
+  * Upcoming
+  * High Priority
+  * Completed
+* Custom Lists
+* Local SQLite Storage
+* Offline Support
+* Local Notifications & Reminders
+* Search Tasks
+* Progress Tracking
+* Android Support
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Expo SDK 51 + React Native 0.74 |
-| Language | TypeScript |
-| Database | expo-sqlite 14.0.6 (local SQLite) |
-| Notifications | expo-notifications 0.28 |
-| Navigation | Expo Router 3.5 |
-| State | Zustand |
-| Styling | NativeWind v4 + StyleSheet |
-| Animations | React Native Reanimated 3.10 |
-| Gestures | React Native Gesture Handler 2.16 |
+| Layer            | Technology                        |
+| ---------------- | --------------------------------- |
+| Framework        | Expo SDK 51 + React Native 0.74   |
+| Language         | TypeScript                        |
+| Database         | Expo SQLite 14.0.6                |
+| State Management | Zustand                           |
+| Navigation       | Expo Router 3.5                   |
+| Notifications    | Expo Notifications 0.28           |
+| Styling          | NativeWind v4                     |
+| Animations       | React Native Reanimated 3.10      |
+| Gestures         | React Native Gesture Handler 2.16 |
 
+---
+
+## Project Structure
+
+```text
+scratch-app/
+│
+├── app/
+│   ├── (tabs)/
+│   │   ├── index.tsx
+│   │   ├── upcoming.tsx
+│   │   ├── lists.tsx
+│   │   ├── search.tsx
+│   │   ├── settings.tsx
+│   │   └── _layout.tsx
+│   │
+│   ├── task/
+│   │   ├── [id].tsx
+│   │   └── new.tsx
+│   │
+│   ├── list/
+│   │   ├── [id].tsx
+│   │   └── new.tsx
+│   │
+│   └── _layout.tsx
+│
+├── assets/
+├── components/
+│   ├── lists/
+│   ├── tasks/
+│   └── ui/
+│
+├── constants/
+├── db/
+│   └── queries/
+├── docs/
+├── hooks/
+├── services/
+├── stores/
+├── types/
+├── utils/
+│
+├── app.json
+├── babel.config.js
+├── eas.json
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+---
+
+## Prerequisites
+
+Install the following:
+
+* Node.js 18+
+* npm
+* Git
+* Expo CLI
+* Expo Go App (Android)
+
+Verify installation:
+
+```bash
+node -v
+npm -v
+git --version
+```
+
+---
+
+## Installation
+
+Clone the repository:
+
+```bash
+git clone <repository-url>
+```
+
+Navigate to the project:
+
+```bash
+cd scratch-app
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+---
+
+## Run the Application
+
+Start the Expo development server:
+
+```bash
+npx expo start
+```
+
+Options:
+
+```text
+a → Android Emulator
+w → Web Browser
+```
+
+Or scan the QR code using Expo Go.
+
+---
+
+## Run on Another System
+
+### Step 1
+
+Install Node.js
+
+https://nodejs.org
+
+Verify:
+
+```bash
+node -v
+npm -v
+```
+
+### Step 2
+
+Clone repository:
+
+```bash
+git clone <repository-url>
+cd scratch-app
+```
+
+### Step 3
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+### Step 4
+
+Verify Expo project health:
+
+```bash
+npx expo-doctor
+```
+
+Expected:
+
+```text
+17/17 checks passed
+```
+
+### Step 5
+
+Run application:
+
+```bash
+npx expo start --clear
+```
+
+### Step 6
+
+Open using:
+
+* Expo Go
+* Android Emulator
+* Web Browser
+
+---
+
+## Build APK
+
+### Cloud Build (Recommended)
+
+```bash
+npm install -g eas-cli
+eas login
+eas build --platform android --profile preview
+```
+
+Download the APK from the generated Expo URL.
+
+---
+
+### Production Build
+
+```bash
+eas build --platform android --profile production
+```
+
+---
+
+## Database
+
+Storage Engine:
+
+```text
+SQLite Local Database
+```
+
+Database initializes automatically during first launch.
+
+---
+
+## Notifications
+
+Uses:
+
+```text
+expo-notifications
+```
+
+Supports:
+
+* Local reminders
+* Scheduled notifications
+* Android notification channels
+
+---
+
+## Troubleshooting
+
+### Clear Metro Cache
+
+```bash
+npx expo start --clear
+```
+
+### Dependency Issues
+
+Windows:
+
+```bash
+rmdir /s /q node_modules
+npm install
+```
+
+### Verify Project
+
+```bash
+npx expo-doctor
+```
+
+Expected:
+
+```text
+17/17 checks passed
+```
+
+---
+
+## Release Notes (v1.0.0)
+
+Major fixes completed:
+
+* SQLite compatibility fixes
+* NativeWind configuration fixes
+* Notification compatibility fixes
+* Android permission fixes
+* Progress calculation fixes
+* Smart View navigation fixes
+* Render-loop fixes
+* Build configuration fixes
+* Expo SDK 51 compatibility fixes
+
+---
+
+## Future Enhancements
+
+* Cloud Sync
+* Recurring Tasks
+* Dark Mode
+* Widgets
+* Backup & Restore
+* Multi-device Sync
+
+---
+
+## Author
+
+Krishna
+
+Version 1.0.0
+Stable Release

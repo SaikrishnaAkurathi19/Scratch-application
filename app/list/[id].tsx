@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlatList } from 'react-native';
@@ -39,9 +39,18 @@ export default function ListDetailScreen() {
     else if (id === 'high')     setTasks(getHighPriorityTasks());
     else if (id === 'all')      setTasks(getCompletedTasks());
     else                        setTasks(getTasksByList(id));
-  }, [id]);
+  }, [id,
+    getTasksByList,
+    getHighPriorityTasks,
+    getUpcomingTasks,
+    getCompletedTasks,
+    getTodayTasks,
+    loadTasks,
+  ]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+    useEffect(() => {
+      load();
+    }, [load]);
 
   if (!listMeta) return null;
 
