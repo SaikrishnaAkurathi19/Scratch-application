@@ -2,7 +2,7 @@
 
 Modern offline-first task management application built with Expo, React Native, SQLite, Zustand, and Expo Notifications.
 
-Version: v1.0.0
+Version: v2.0.0
 
 Status: Stable Release
 
@@ -24,7 +24,20 @@ Status: Stable Release
 * Search Tasks
 * Progress Tracking
 * Android Support
+* 
+Done. I kept the v2 structure intact and made focused fixes only.
 
+Fixed:
+
+Reminder scheduling: Android channel added, duplicate scheduling removed, Android reminder picker now date then time.
+Dark mode: System / Light / Dark control added, bottom tabs now follow app theme.
+Haptics: feedback made stronger and more noticeable.
+Task detail: opens in preview mode; editing unlocks changes.
+Category/List UX: task creation now uses one CATEGORY picker based on user-created lists.
+Long-press delete: delete bar hides when no task is selected; close button removed.
+Sorting: replaced old pill bar with a cleaner shared sort menu.
+Today tab: now also shows upcoming tasks.
+Category creation: renamed list wording, enriched icon picker with labels.
 ---
 
 ## Tech Stack
