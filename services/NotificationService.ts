@@ -56,6 +56,7 @@ export async function scheduleReminder(task: Task): Promise<string | null> {
         body: task.notes ?? 'Tap to view task',
         data: { taskId: task.id },
         sound: 'default',
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger,
     });
@@ -107,6 +108,7 @@ export async function scheduleSnooze(
         body: 'Snoozed reminder',
         data: { taskId },
         sound: 'default',
+        ...(Platform.OS === 'android' ? { channelId: 'default' } : {}),
       },
       trigger: { date: snoozeDate },
     });

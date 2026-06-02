@@ -1,10 +1,10 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useListStore } from '../../stores/listStore';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../hooks/useTheme';
 import { List } from '../../types';
 import {
   getTodayTasks,
@@ -12,53 +12,32 @@ import {
   getHighPriorityTasks,
   getCompletedTasks,
   getTaskCountByList,
+  getTrashedTasks,
 } from '../../db/queries/tasks';
 
 const SMART_VIEWS = [
-  {
-    id: 'today',
-    name: 'Today',
-    icon: 'home',
-    iconColor: Colors.primary,
-    bgColor: Colors.primaryLight,
-    badgeStyle: 'red',
-  },
-  {
-    id: 'upcoming',
-    name: 'Upcoming',
-    icon: 'calendar-sharp',
-    iconColor: '#3B82F6',
-    bgColor: '#e8f4ff',
-    badgeStyle: 'blue',
-  },
-  {
-    id: 'high',
-    name: 'High Priority',
-    icon: 'alert-circle',
-    iconColor: Colors.high,
-    bgColor: Colors.highBg,
-    badgeStyle: 'red',
-  },
-  {
-    id: 'all',
-    name: 'Completed',
-    icon: 'checkmark-circle',
-    iconColor: Colors.low,
-    bgColor: Colors.lowBg,
-    badgeStyle: 'green',
-  },
+  { id: 'today', name: 'Today', icon: 'home', iconColor: '#6C63FF', bgColor: '#f0eeff', badgeStyle: 'primary' },
+  { id: 'upcoming', name: 'Upcoming', icon: 'calendar-sharp', iconColor: '#3B82F6', bgColor: '#e8f4ff', badgeStyle: 'blue' },
+  { id: 'high', name: 'High Priority', icon: 'alert-circle', iconColor: '#E24B4A', bgColor: '#fff0f0', badgeStyle: 'red' },
+  { id: 'all', name: 'Completed', icon: 'checkmark-circle', iconColor: '#16A34A', bgColor: '#f0fdf4', badgeStyle: 'green' },
+  { id: 'trash', name: 'Trash', icon: 'trash', iconColor: '#9b9bb4', bgColor: '#f5f5f5', badgeStyle: 'gray' },
 ] as const;
 
 export default function ListsScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { lists, loadLists, deleteList } = useListStore();
   const [counts, setCounts] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    loadLists();
-  }, []);
+  // Load lists only when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      loadLists();
+    }, [])
+  );
 
-  const load = useCallback(() => {
+  // Calculate counts when lists change
+  useEffect(() => {
     try {
       const c: Record<string, number> = {};
 
@@ -66,23 +45,16 @@ export default function ListsScreen() {
       c.upcoming = getUpcomingTasks().length;
       c.high = getHighPriorityTasks().length;
       c.all = getCompletedTasks().length;
+      c.trash = getTrashedTasks().length;
 
       lists.forEach(list => {
         c[list.id] = getTaskCountByList(list.id);
       });
 
-      setCounts(prev => {
-        const oldValue = JSON.stringify(prev);
-        const newValue = JSON.stringify(c);
-        return oldValue === newValue ? prev : c;
-      });
-    } catch (error) {
-      console.log('Error loading counts:', error);
+      setCounts(c);
+    } catch (e) {
+      console.log('Count error:', e);
     }
-  }, [lists]);
-
-  useEffect(() => {
-    load();
   }, [lists]);
 
   const handleDeleteList = (list: List) => {
@@ -109,25 +81,23 @@ export default function ListsScreen() {
   };
 
   const getBadgeColors = (style: string) => {
-    if (style === 'red') {
-      return { bg: Colors.highBg, text: Colors.high };
-    }
+    if (style === 'red') return { bg: colors.highBg, text: colors.high };
+    if (style === 'blue') return { bg: '#e8f4ff', text: '#3B82F6' };
+    if (style === 'green') return { bg: colors.lowBg, text: colors.low };
+    if (style === 'gray') return { bg: colors.backgroundSecondary, text: colors.textSecondary };
 
-    if (style === 'blue') {
-      return { bg: '#e8f4ff', text: '#3B82F6' };
-    }
-
-    if (style === 'green') {
-      return { bg: Colors.lowBg, text: Colors.low };
-    }
-
-    return { bg: Colors.primaryLight, text: Colors.primary };
+    return {
+      bg: colors.primaryLight,
+      text: colors.primary,
+    };
   };
+
+  const styles = makeStyles(colors);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Lists</Text>
+        <Text style={styles.title}>Categories</Text>
 
         <TouchableOpacity
           style={styles.fab}
@@ -191,13 +161,13 @@ export default function ListsScreen() {
               <Ionicons
                 name="chevron-forward"
                 size={15}
-                color={Colors.textTertiary}
+                color={colors.textTertiary}
               />
             </TouchableOpacity>
           );
         })}
 
-        <Text style={styles.section}>MY LISTS</Text>
+        <Text style={styles.section}>CATEGORIES</Text>
 
         {lists.map(list => (
           <TouchableOpacity
@@ -229,92 +199,104 @@ export default function ListsScreen() {
             <Ionicons
               name="chevron-forward"
               size={15}
-              color={Colors.textTertiary}
+              color={colors.textTertiary}
             />
           </TouchableOpacity>
         ))}
 
         <Text style={styles.hint}>
-          Long press a list to delete it
+          Long press a category to delete it
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '500',
-    color: Colors.text,
-  },
-  fab: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  section: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: Colors.textSecondary,
-    letterSpacing: 0.8,
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 6,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
-  },
-  iconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listName: {
-    flex: 1,
-    fontSize: 15,
-    color: Colors.text,
-  },
-  taskCount: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-  },
-  badge: {
-    paddingHorizontal: 9,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  hint: {
-    fontSize: 11,
-    color: Colors.textTertiary,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-});
+const makeStyles = (colors: any) =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 8,
+      paddingBottom: 8,
+    },
+
+    title: {
+      fontSize: 28,
+      fontWeight: '500',
+      color: colors.text,
+    },
+
+    fab: {
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    section: {
+      fontSize: 11,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      letterSpacing: 0.8,
+      paddingHorizontal: 20,
+      paddingTop: 14,
+      paddingBottom: 6,
+    },
+
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.border,
+    },
+
+    iconWrap: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    listName: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.text,
+    },
+
+    taskCount: {
+      fontSize: 12,
+      color: colors.textTertiary,
+    },
+
+    badge: {
+      paddingHorizontal: 9,
+      paddingVertical: 3,
+      borderRadius: 10,
+    },
+
+    badgeText: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+
+    hint: {
+      fontSize: 11,
+      color: colors.textTertiary,
+      textAlign: 'center',
+      marginTop: 20,
+    },
+  });

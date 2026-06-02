@@ -8,17 +8,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTaskStore } from '../../stores/taskStore';
 import { useListStore } from '../../stores/listStore';
-import { Colors, PriorityColors } from '../../constants/colors';
+import { useTheme } from '../../hooks/useTheme';
 import { TaskWithExtras, Priority } from '../../types';
 import { formatDateTime, formatDate } from '../../utils/date';
 import { useHaptics } from '../../hooks/useHaptics';
 import { addSubtask, toggleSubtask, deleteSubtask } from '../../db/queries/tasks';
 
+const PRIORITIES: Priority[] = ['high', 'medium', 'low'];
+
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const haptics = useHaptics();
-  const { getTaskById, completeTask, uncompleteTask, updateTask, deleteTask } = useTaskStore();
+  const { colors, getPriorityColors } = useTheme();
+  const { getTaskById, completeTask, uncompleteTask, updateTask, trashTask } = useTaskStore();
   const { lists } = useListStore();
 
   const [task, setTask] = useState<TaskWithExtras | null>(null);
@@ -53,10 +56,10 @@ export default function TaskDetailScreen() {
     load();
   };
 
-  const handleDelete = () => {
-    Alert.alert('Delete task', 'This cannot be undone.', [
+  const handleTrash = () => {
+    Alert.alert('Move to trash', 'Task will be moved to trash.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => { deleteTask(task.id); router.back(); } },
+      { text: 'Trash', style: 'destructive', onPress: async () => { await trashTask(task.id); router.back(); } },
     ]);
   };
 
@@ -68,10 +71,23 @@ export default function TaskDetailScreen() {
     load();
   };
 
-  const pc = PriorityColors[task.priority];
+  const handleChangePriority = (p: Priority) => {
+    updateTask(task.id, { priority: p });
+    haptics.light();
+    load();
+  };
+
+  const handleChangeList = (listId: string) => {
+    updateTask(task.id, { listId });
+    haptics.light();
+    load();
+  };
+
+  const pc = getPriorityColors(task.priority);
   const subtasks = task.subtasks ?? [];
   const completedSubs = subtasks.filter(s => s.isCompleted === 1).length;
-  const list = lists.find(l => l.id === task.listId);
+
+  const styles = makeStyles(colors);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -79,169 +95,237 @@ export default function TaskDetailScreen() {
         {/* Nav */}
         <View style={styles.nav}>
           <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="arrow-back" size={22} color={Colors.text} />
+            <Ionicons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.navActions}>
             {editing ? (
               <TouchableOpacity onPress={handleSaveEdit}>
-                <Text style={styles.saveText}>Save</Text>
+                <Text style={[styles.saveText, { color: colors.primary }]}>Save</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity onPress={() => setEditing(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="create-outline" size={22} color={Colors.primary} />
+                <Ionicons name="create-outline" size={22} color={colors.primary} />
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="trash-outline" size={22} color={Colors.high} />
+            <TouchableOpacity onPress={handleTrash} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="trash-outline" size={22} color={colors.high} />
             </TouchableOpacity>
           </View>
         </View>
 
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Complete toggle */}
-          <TouchableOpacity style={styles.completeRow} onPress={handleToggleComplete} activeOpacity={0.7}>
-            <View style={[styles.bigCheck, task.isCompleted ? styles.bigCheckDone : { borderColor: pc.checkBorder }]}>
-              {task.isCompleted === 1 && <Ionicons name="checkmark" size={18} color={Colors.primary} />}
+          <TouchableOpacity style={styles.completeRow} onPress={editing ? handleToggleComplete : undefined} activeOpacity={editing ? 0.7 : 1}>
+            <View style={[styles.bigCheck, task.isCompleted ? { backgroundColor: colors.primary, borderColor: colors.primary } : { borderColor: pc.checkBorder }]}>
+              {task.isCompleted === 1 && <Ionicons name="checkmark" size={18} color="#fff" />}
             </View>
-            <Text style={[styles.taskTitle, task.isCompleted === 1 && styles.taskTitleDone]}>
-              {editing ? '' : task.title}
-            </Text>
+            {!editing && (
+              <Text style={[styles.taskTitle, { color: colors.text }, task.isCompleted === 1 && { color: colors.textTertiary, textDecorationLine: 'line-through' }]}>
+                {task.title}
+              </Text>
+            )}
           </TouchableOpacity>
 
-          {/* Editable fields */}
           {editing && (
             <View style={styles.editWrap}>
               <TextInput
-                style={styles.editTitle}
+                style={[styles.editTitle, { color: colors.text }]}
                 value={title}
                 onChangeText={setTitle}
                 multiline
                 autoFocus
                 placeholder="Task title"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
               />
               <TextInput
-                style={styles.editNotes}
+                style={[styles.editNotes, { color: colors.textSecondary }]}
                 value={notes}
                 onChangeText={setNotes}
                 multiline
                 placeholder="Notes..."
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
           )}
 
           {!editing && task.notes && (
-            <Text style={styles.notes}>{task.notes}</Text>
+            <>
+              <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>NOTES</Text>
+              <Text style={[styles.notes, { color: colors.textSecondary }]}>{task.notes}</Text>
+            </>
           )}
 
-          {/* Meta chips */}
-          <View style={styles.chips}>
-            <View style={[styles.chip, { backgroundColor: pc.bg, borderColor: pc.border }]}>
-              {task.priority === 'high' && <Ionicons name="flame" size={12} color={pc.text} />}
-              <Text style={[styles.chipText, { color: pc.text }]}>
-                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} priority
-              </Text>
-            </View>
-            {list && (
-              <View style={[styles.chip, { backgroundColor: list.color + '18', borderColor: list.color + '44' }]}>
-                <Ionicons name={list.icon as any} size={12} color={list.color} />
-                <Text style={[styles.chipText, { color: list.color }]}>{list.name}</Text>
-              </View>
-            )}
+          {/* Priority chips — tappable to change */}
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>PRIORITY</Text>
+          <View style={styles.chipRow}>
+            {PRIORITIES.map(p => {
+              const selected = task.priority === p;
+              const pC = getPriorityColors(p);
+              return (
+                <TouchableOpacity
+                  key={p}
+                  style={[styles.chip, { backgroundColor: selected ? pC.bg : colors.backgroundSecondary, borderColor: selected ? pC.border : colors.border }]}
+                  onPress={editing ? () => handleChangePriority(p) : undefined}
+                  activeOpacity={editing ? 0.7 : 1}
+                >
+                  {p === 'high' && <Ionicons name="flame" size={12} color={selected ? pC.text : colors.textSecondary} />}
+                  <Text style={[styles.chipText, { color: selected ? pC.text : colors.textSecondary, fontWeight: selected ? '600' : '400' }]}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Category */}
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>CATEGORY</Text>
+          <View style={styles.chipRow}>
+            {lists.map(l => {
+              const selected = task.listId === l.id;
+              return (
+                <TouchableOpacity
+                  key={l.id}
+                  style={[styles.chip, { backgroundColor: selected ? l.color + '22' : colors.backgroundSecondary, borderColor: selected ? l.color : colors.border }]}
+                  onPress={editing ? () => handleChangeList(l.id) : undefined}
+                  activeOpacity={editing ? 0.7 : 1}
+                >
+                  <Ionicons name={l.icon as any} size={12} color={selected ? l.color : colors.textSecondary} />
+                  <Text style={[styles.chipText, { color: selected ? l.color : colors.textSecondary, fontWeight: selected ? '600' : '400' }]}>{l.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Date info */}
+          <View style={[styles.metaBox, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
             {task.dueDate && (
-              <View style={styles.chip}>
-                <Ionicons name="calendar-outline" size={12} color={Colors.textSecondary} />
-                <Text style={styles.chipText}>{formatDate(task.dueDate)}</Text>
+              <View style={styles.metaRow}>
+                <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+                <Text style={[styles.metaText, { color: colors.textSecondary }]}>Due {formatDate(task.dueDate)}</Text>
               </View>
             )}
             {task.reminderAt && (
-              <View style={[styles.chip, { backgroundColor: Colors.primaryLight, borderColor: Colors.primaryMid }]}>
-                <Ionicons name="notifications" size={12} color={Colors.primary} />
-                <Text style={[styles.chipText, { color: Colors.primary }]}>{formatDateTime(task.reminderAt)}</Text>
+              <View style={styles.metaRow}>
+                <Ionicons name="notifications-outline" size={14} color={colors.primary} />
+                <Text style={[styles.metaText, { color: colors.primary }]}>Reminder {formatDateTime(task.reminderAt)}</Text>
+              </View>
+            )}
+            {task.recurrence && (
+              <View style={styles.metaRow}>
+                <Ionicons name="repeat" size={14} color={colors.primary} />
+                <Text style={[styles.metaText, { color: colors.primary }]}>
+                  Repeats {task.recurrence}
+                  {task.recurrenceDays ? ` (custom days)` : ''}
+                  {task.recurrenceEndDate ? ` until ${formatDate(task.recurrenceEndDate)}` : ''}
+                </Text>
               </View>
             )}
           </View>
 
           {/* Subtasks */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>SUBTASKS</Text>
-              {subtasks.length > 0 && (
-                <Text style={styles.sectionBadge}>{completedSubs}/{subtasks.length}</Text>
-              )}
-            </View>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+            SUBTASKS {subtasks.length > 0 ? `(${completedSubs}/${subtasks.length})` : ''}
+          </Text>
 
-            {subtasks.map(sub => (
-              <View key={sub.id} style={styles.subRow}>
-                <TouchableOpacity
-                  style={[styles.subCheck, sub.isCompleted === 1 && styles.subCheckDone]}
-                  onPress={() => { toggleSubtask(sub.id, sub.isCompleted ? 0 : 1); haptics.light(); load(); }}
-                >
-                  {sub.isCompleted === 1 && <Ionicons name="checkmark" size={10} color={Colors.primary} />}
-                </TouchableOpacity>
-                <Text style={[styles.subTitle, sub.isCompleted === 1 && styles.subTitleDone]}>{sub.title}</Text>
-                <TouchableOpacity onPress={() => { deleteSubtask(sub.id); load(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="close" size={15} color={Colors.textTertiary} />
-                </TouchableOpacity>
+          {subtasks.map(sub => (
+            <TouchableOpacity
+              key={sub.id}
+              style={[styles.subtaskRow, { borderColor: colors.border }]}
+              onPress={() => {
+                if (!editing) return;
+                toggleSubtask(sub.id, sub.isCompleted === 1 ? 0 : 1);
+                haptics.light();
+                load();
+              }}
+              activeOpacity={editing ? 0.7 : 1}
+            >
+              <View style={[styles.subCheck, { borderColor: sub.isCompleted ? colors.primary : colors.textTertiary }, sub.isCompleted === 1 && { backgroundColor: colors.primary }]}>
+                {sub.isCompleted === 1 && <Ionicons name="checkmark" size={10} color="#fff" />}
               </View>
-            ))}
+              <Text style={[styles.subtaskText, { color: colors.text }, sub.isCompleted === 1 && { color: colors.textTertiary, textDecorationLine: 'line-through' }]}>
+                {sub.title}
+              </Text>
+              {editing && (
+                <TouchableOpacity onPress={() => { deleteSubtask(sub.id); load(); }}>
+                  <Ionicons name="close" size={14} color={colors.textTertiary} />
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+          ))}
 
-            <View style={styles.subInputRow}>
+          {editing && (
+            <View style={[styles.addSubtask, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}>
+              <Ionicons name="add" size={16} color={colors.textTertiary} />
               <TextInput
-                style={styles.subInput}
-                placeholder="Add a subtask..."
-                placeholderTextColor={Colors.textTertiary}
+                style={[styles.addSubtaskInput, { color: colors.text }]}
+                placeholder="Add subtask..."
+                placeholderTextColor={colors.textTertiary}
                 value={subtaskInput}
                 onChangeText={setSubtaskInput}
                 onSubmitEditing={handleAddSubtask}
                 returnKeyType="done"
               />
-              <TouchableOpacity onPress={handleAddSubtask} disabled={!subtaskInput.trim()}>
-                <Ionicons name="add-circle" size={24} color={subtaskInput.trim() ? Colors.primary : Colors.textTertiary} />
-              </TouchableOpacity>
+              {subtaskInput.trim() !== '' && (
+                <TouchableOpacity onPress={handleAddSubtask}>
+                  <Ionicons name="checkmark" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
+          )}
 
-          <View style={{ height: 100 }} />
+          <View style={{ height: 80 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  nav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  navActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  saveText: { fontSize: 16, fontWeight: '500', color: Colors.primary },
-  scroll: { flex: 1, paddingHorizontal: 20 },
-  completeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
-  bigCheck: { width: 26, height: 26, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 3, flexShrink: 0 },
-  bigCheckDone: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary },
-  taskTitle: { flex: 1, fontSize: 22, fontWeight: '500', color: Colors.text, lineHeight: 30 },
-  taskTitleDone: { color: Colors.textTertiary, textDecorationLine: 'line-through' },
-  notes: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22, marginBottom: 14 },
-  editWrap: { marginBottom: 14 },
-  editTitle: { fontSize: 22, fontWeight: '500', color: Colors.text, marginBottom: 8, lineHeight: 30, borderBottomWidth: 1, borderBottomColor: Colors.primaryMid, paddingBottom: 4 },
-  editNotes: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 10, backgroundColor: Colors.backgroundSecondary,
-    borderWidth: 1, borderColor: Colors.border,
+const makeStyles = (colors: any) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  nav: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 0.5, borderBottomColor: colors.border,
   },
-  chipText: { fontSize: 12, color: Colors.textSecondary },
-  section: { backgroundColor: Colors.backgroundSecondary, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  sectionTitle: { fontSize: 11, fontWeight: '500', color: Colors.textSecondary, letterSpacing: 0.8 },
-  sectionBadge: { fontSize: 11, color: Colors.primary, fontWeight: '500', backgroundColor: Colors.primaryLight, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 8 },
-  subRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: Colors.border },
-  subCheck: { width: 18, height: 18, borderRadius: 5, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  subCheckDone: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary },
-  subTitle: { flex: 1, fontSize: 14, color: Colors.text },
-  subTitleDone: { color: Colors.textTertiary, textDecorationLine: 'line-through' },
-  subInputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 8 },
-  subInput: { flex: 1, fontSize: 14, color: Colors.text },
+  navActions: { flexDirection: 'row', gap: 16, alignItems: 'center' },
+  saveText: { fontSize: 16, fontWeight: '500' },
+  scroll: { flex: 1, paddingHorizontal: 20 },
+  completeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingTop: 20, paddingBottom: 12 },
+  bigCheck: {
+    width: 26, height: 26, borderRadius: 8, borderWidth: 2,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2,
+  },
+  taskTitle: { fontSize: 20, fontWeight: '500', flex: 1, lineHeight: 28 },
+  editWrap: { paddingBottom: 12 },
+  editTitle: { fontSize: 20, fontWeight: '400', lineHeight: 28, minHeight: 40, marginBottom: 8 },
+  editNotes: { fontSize: 15, lineHeight: 22, minHeight: 36 },
+  notes: { fontSize: 15, lineHeight: 22, paddingBottom: 16 },
+  sectionLabel: { fontSize: 10, fontWeight: '500', letterSpacing: 0.8, marginTop: 16, marginBottom: 8 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1.5,
+  },
+  chipText: { fontSize: 12 },
+  metaBox: {
+    borderRadius: 10, padding: 12, borderWidth: 1,
+    gap: 8, marginTop: 16, marginBottom: 4,
+  },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaText: { fontSize: 13 },
+  subtaskRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, borderBottomWidth: 0.5,
+  },
+  subCheck: {
+    width: 18, height: 18, borderRadius: 5, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  subtaskText: { flex: 1, fontSize: 14 },
+  addSubtask: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 12, paddingVertical: 10,
+    borderRadius: 10, borderWidth: 1, marginTop: 8,
+  },
+  addSubtaskInput: { flex: 1, fontSize: 14 },
 });
