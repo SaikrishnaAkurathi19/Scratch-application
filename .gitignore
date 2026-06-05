@@ -1,0 +1,63 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+
+# build outputs
+dist/
+web-build/
+build/
+
+# Android
+android/
+
+# iOS
+ios/
+
+# EAS
+*.apk
+*.aab
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# local env files
+.env
+.env.local
+.env.*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# temporary files
+*.tmp
+*.temp
+
+# coverage
+coverage/
+
+# Metro cache
+.metro-health-check*
+
+# Expo generated
+nativewind-env.d.ts
+
+# Expo generated
+nativewind-env.d.ts
+expo-env.d.ts
