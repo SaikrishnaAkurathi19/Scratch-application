@@ -16,14 +16,14 @@ export default function ListDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
-  const { getTasksByList, getHighPriorityTasks, getUpcomingTasks, getCompletedTasks, getTodayTasks, getTrashedTasks, completeTask, trashTask, restoreTask: storeRestore, emptyTrash: storeEmptyTrash, loadTasks, sortOrder, setSortOrder } = useTaskStore();
+  const { getTasksByList, getHighPriorityTasks, getUpcomingTasks, getCompletedTasks, getTodayTasks, getTrashedTasks, completeTask, uncompleteTask, trashTask, restoreTask: storeRestore, emptyTrash: storeEmptyTrash, loadTasks, sortOrder, setSortOrder } = useTaskStore();
   const { lists } = useListStore();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showSort, setShowSort] = useState(false);
 
   const SMART_VIEWS: Record<string, { name: string; icon: string; color: string }> = {
     today: { name: 'Today', icon: 'home', color: colors.primary },
-    upcoming: { name: 'Upcoming', icon: 'calendar-sharp', color: '#3B82F6' },
+    upcoming: { name: 'Calendar', icon: 'calendar-sharp', color: '#3B82F6' },
     high: { name: 'High Priority', icon: 'alert-circle', color: colors.high },
     all: { name: 'Completed', icon: 'checkmark-circle', color: colors.low },
     trash: { name: 'Trash', icon: 'trash', color: colors.textSecondary },
@@ -149,7 +149,7 @@ export default function ListDetailScreen() {
             return (
               <TaskCard
                 task={item}
-                onComplete={itemId => { completeTask(itemId); load(); }}
+                onComplete={() => { item.isCompleted === 1 ? uncompleteTask(item.id) : completeTask(item.id); load(); }}
                 onTrash={itemId => { trashTask(itemId); load(); }}
                 onPress={itemId => router.push(`/task/${itemId}` as any)}
               />

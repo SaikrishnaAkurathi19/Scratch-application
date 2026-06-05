@@ -1,4 +1,4 @@
-export type Priority = 'high' | 'medium' | 'low';
+export type Priority = 'none' | 'high' | 'medium' | 'low';
 export type Recurrence = 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
 export type WorkNature = 'personal' | 'work' | 'shopping' | 'health' | 'other';
 export type SortOrder = 'priority' | 'dueDate' | 'createdAt' | 'title';
@@ -23,6 +23,9 @@ export interface Task {
   sortOrder: number;
   createdAt: number;
   updatedAt: number;
+  listName?: string;
+  listColor?: string;
+  listIcon?: string;
 }
 
 export interface Subtask {
@@ -67,6 +70,4 @@ export interface Stats {
 export interface TaskWithExtras extends Task {
   subtasks?: Subtask[];
   tags?: Tag[];
-  listName?: string;
-  listColor?: string;
 }

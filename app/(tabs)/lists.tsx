@@ -17,7 +17,7 @@ import {
 
 const SMART_VIEWS = [
   { id: 'today', name: 'Today', icon: 'home', iconColor: '#6C63FF', bgColor: '#f0eeff', badgeStyle: 'primary' },
-  { id: 'upcoming', name: 'Upcoming', icon: 'calendar-sharp', iconColor: '#3B82F6', bgColor: '#e8f4ff', badgeStyle: 'blue' },
+  { id: 'upcoming', name: 'Calendar', icon: 'calendar-sharp', iconColor: '#3B82F6', bgColor: '#e8f4ff', badgeStyle: 'blue' },
   { id: 'high', name: 'High Priority', icon: 'alert-circle', iconColor: '#E24B4A', bgColor: '#fff0f0', badgeStyle: 'red' },
   { id: 'all', name: 'Completed', icon: 'checkmark-circle', iconColor: '#16A34A', bgColor: '#f0fdf4', badgeStyle: 'green' },
   { id: 'trash', name: 'Trash', icon: 'trash', iconColor: '#9b9bb4', bgColor: '#f5f5f5', badgeStyle: 'gray' },

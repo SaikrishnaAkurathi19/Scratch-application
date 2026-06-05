@@ -16,8 +16,8 @@ import { useHaptics } from '../../hooks/useHaptics';
 import { addSubtask as saveSubtask } from '../../db/queries/tasks';
 
 type QuickDate = 'Today' | 'Tomorrow' | 'Next Week';
-const PRIORITIES: Priority[] = ['high', 'medium', 'low'];
-const PRIORITY_LABELS = { high: '🔥 High', medium: '● Medium', low: '● Low' };
+const PRIORITIES: Priority[] = ['none', 'high', 'medium', 'low'];
+const PRIORITY_LABELS: Record<Priority, string> = { none: 'None', high: 'High', medium: 'Medium', low: 'Low' };
 const RECURRENCES: Array<{ value: Recurrence | 'weekdays'; label: string; icon: string }> = [
   { value: 'daily', label: 'Daily', icon: 'sunny-outline' },
   { value: 'weekly', label: 'Weekly', icon: 'calendar-outline' },
@@ -36,7 +36,7 @@ export default function NewTaskScreen() {
 
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
-  const [priority, setPriority] = useState<Priority>('medium');
+  const [priority, setPriority] = useState<Priority>('none');
   const [selectedListId, setSelectedListId] = useState('');
   const [quickDate, setQuickDate] = useState<QuickDate | null>(null);
   const [customDate, setCustomDate] = useState<Date | null>(null);
@@ -171,7 +171,7 @@ export default function NewTaskScreen() {
           <View style={styles.pillRow}>
             {PRIORITIES.map(p => {
               const selected = priority === p;
-              const pColors = { high: colors.high, medium: colors.medium, low: colors.low };
+              const pColors = { none: colors.textSecondary, high: colors.high, medium: colors.medium, low: colors.low };
               const c = pColors[p];
               return (
                 <TouchableOpacity
@@ -319,7 +319,7 @@ export default function NewTaskScreen() {
             </View>
           )}
 
-          {(recurrence || customRecurrence) && (
+          {((recurrence && recurrence !== 'daily') || customRecurrence) && (
             <TouchableOpacity
               style={[styles.fieldRow, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}
               onPress={() => setShowEndDatePicker(true)}

@@ -25,7 +25,7 @@ export function TaskList({
   sectionTitle,
 }: Props) {
   const router = useRouter();
-  const { completeTask, trashTask, loadTasks } = useTaskStore();
+  const { completeTask, uncompleteTask, trashTask, loadTasks } = useTaskStore();
 
   if (tasks.length === 0) {
     return <EmptyState icon={emptyIcon} title={emptyTitle} subtitle={emptySubtitle} />;
@@ -41,7 +41,7 @@ export function TaskList({
       renderItem={({ item }) => (
         <TaskCard
           task={item}
-          onComplete={id => { completeTask(id); loadTasks(); }}
+          onComplete={() => { item.isCompleted === 1 ? uncompleteTask(item.id) : completeTask(item.id); loadTasks(); }}
           onTrash={id => { trashTask(id); loadTasks(); }}
           onPress={id => router.push(`/task/${id}`)}
         />

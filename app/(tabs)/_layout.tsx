@@ -25,10 +25,10 @@ export default function TabLayout() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500' },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} /> }} />
-      <Tabs.Screen name="upcoming" options={{ title: 'Upcoming', tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: 'Tasks', tabBarIcon: ({ color, size }) => <Ionicons name="checkbox" size={size} color={color} /> }} />
+      <Tabs.Screen name="upcoming" options={{ title: 'Calendar', tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} /> }} />
       <Tabs.Screen name="lists" options={{ title: 'Lists', tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} /> }} />
-      <Tabs.Screen name="search" options={{ title: 'Search', tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} /> }} />
+      <Tabs.Screen name="search" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ title: 'Progress', tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart" size={size} color={color} /> }} />
     </Tabs>
   );

@@ -105,11 +105,13 @@ export function setColorScheme(dark: boolean) {
 
 export const PriorityColors = {
   light: {
+    none: { text: LightColors.textSecondary, bg: LightColors.backgroundSecondary, border: LightColors.border, checkBorder: LightColors.border },
     high: { text: LightColors.high, bg: LightColors.highBg, border: LightColors.high, checkBorder: LightColors.high },
     medium: { text: LightColors.medium, bg: LightColors.mediumBg, border: LightColors.medium, checkBorder: LightColors.medium },
     low: { text: LightColors.low, bg: LightColors.lowBg, border: LightColors.low, checkBorder: LightColors.border },
   },
   dark: {
+    none: { text: DarkColors.textSecondary, bg: DarkColors.backgroundSecondary, border: DarkColors.border, checkBorder: DarkColors.border },
     high: { text: DarkColors.high, bg: DarkColors.highBg, border: DarkColors.high, checkBorder: DarkColors.high },
     medium: { text: DarkColors.medium, bg: DarkColors.mediumBg, border: DarkColors.medium, checkBorder: DarkColors.medium },
     low: { text: DarkColors.low, bg: DarkColors.lowBg, border: DarkColors.low, checkBorder: DarkColors.border },
@@ -125,7 +127,7 @@ export const ListIcons = [
   'person', 'briefcase', 'cart', 'heart',
   'home', 'book', 'star', 'bulb',
   'fitness', 'school', 'restaurant', 'wallet',
-  'car', 'airplane', 'calendar-check', 'sparkles',
+  'car', 'airplane', 'calendar-outline', 'sparkles',
 ];
 
 export const WorkNatureColors: Record<string, string> = {

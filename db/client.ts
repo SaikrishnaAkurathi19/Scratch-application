@@ -31,7 +31,7 @@ export async function initDatabase(): Promise<void> {
       id TEXT PRIMARY KEY NOT NULL,
       title TEXT NOT NULL,
       notes TEXT,
-      priority TEXT NOT NULL DEFAULT 'medium',
+      priority TEXT NOT NULL DEFAULT 'none',
       work_nature TEXT NOT NULL DEFAULT 'personal',
       list_id TEXT NOT NULL,
       due_date INTEGER,

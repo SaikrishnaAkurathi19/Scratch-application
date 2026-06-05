@@ -15,7 +15,7 @@ export default function SettingsScreen() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [todayCount, setTodayCount] = useState(0);
   const [weekCount, setWeekCount] = useState(0);
-  const { getTrashedTasks, emptyTrash } = useTaskStore();
+  const { getTrashedTasks, getTodayTasks, getUpcomingTasks, getHighPriorityTasks, getCompletedTasks, emptyTrash } = useTaskStore();
   const { hapticsEnabled, soundEnabled, setHapticsEnabled, setSoundEnabled, darkModeOverride, setDarkModeOverride } = useSettingsStore();
 
   useFocusEffect(useCallback(() => {
@@ -49,6 +49,11 @@ export default function SettingsScreen() {
   };
 
   const trashCount = getTrashedTasks().length;
+  const activeToday = getTodayTasks().length;
+  const scheduled = getUpcomingTasks().length;
+  const highPriority = getHighPriorityTasks().length;
+  const completedRecent = getCompletedTasks().length;
+  const completionRate = activeToday + completedRecent > 0 ? Math.round((completedRecent / (activeToday + completedRecent)) * 100) : 0;
 
   const styles = makeStyles(colors);
 
@@ -131,6 +136,25 @@ export default function SettingsScreen() {
             </Text>
           </View>
         )}
+
+        <Text style={[styles.section, { color: colors.textSecondary }]}>TASK HEALTH</Text>
+
+        <View style={[styles.insightCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }]}>
+          {[
+            { label: 'Completion rate', value: `${completionRate}%`, icon: 'pulse-outline', color: colors.primary },
+            { label: 'Active today', value: activeToday, icon: 'checkbox-outline', color: colors.medium },
+            { label: 'Scheduled', value: scheduled, icon: 'calendar-outline', color: '#3B82F6' },
+            { label: 'High priority', value: highPriority, icon: 'alert-circle-outline', color: colors.high },
+          ].map(item => (
+            <View key={item.label} style={styles.insightRow}>
+              <View style={[styles.insightIcon, { backgroundColor: item.color + '18' }]}>
+                <Ionicons name={item.icon as any} size={16} color={item.color} />
+              </View>
+              <Text style={[styles.insightLabel, { color: colors.text }]}>{item.label}</Text>
+              <Text style={[styles.insightValue, { color: item.color }]}>{item.value}</Text>
+            </View>
+          ))}
+        </View>
 
         {/* Settings section */}
         <Text style={[styles.section, { color: colors.textSecondary }]}>SETTINGS</Text>
@@ -278,6 +302,11 @@ const makeStyles = (colors: any) => StyleSheet.create({
   },
   motivationText: { flex: 1, fontSize: 13, lineHeight: 19 },
   section: { fontSize: 11, fontWeight: '500', letterSpacing: 0.8, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 8 },
+  insightCard: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginBottom: 16 },
+  insightRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 11 },
+  insightIcon: { width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  insightLabel: { flex: 1, fontSize: 14 },
+  insightValue: { fontSize: 15, fontWeight: '700' },
   settingsCard: { marginHorizontal: 16, borderRadius: 14, borderWidth: 1, overflow: 'hidden', marginBottom: 16 },
   settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14 },
   settingLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },

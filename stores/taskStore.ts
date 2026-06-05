@@ -14,6 +14,7 @@ interface TaskStore {
   getTodayTasks: () => Task[];
   getOverdueTasks: () => Task[];
   getUpcomingTasks: () => Task[];
+  getCalendarTasks: () => Task[];
   getTasksByList: (listId: string) => Task[];
   getHighPriorityTasks: () => Task[];
   getCompletedTasks: () => Task[];
@@ -56,6 +57,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
   getUpcomingTasks: () => {
     try { return TaskQueries.getUpcomingTasks(get().sortOrder); } catch { return []; }
+  },
+  getCalendarTasks: () => {
+    try { return TaskQueries.getCalendarTasks(get().sortOrder); } catch { return []; }
   },
   getTasksByList: (listId) => {
     try { return TaskQueries.getTasksByList(listId, get().sortOrder); } catch { return []; }

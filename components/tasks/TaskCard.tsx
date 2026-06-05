@@ -1,16 +1,17 @@
-import React, { useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, TextInput } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring,
   withTiming, runOnJS, FadeOut, Layout,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { Task } from '../../types';
+import { Task, Subtask } from '../../types';
 import { PriorityBadge } from './PriorityBadge';
 import { useTheme } from '../../hooks/useTheme';
 import { formatDate, isOverdue } from '../../utils/date';
 import { useHaptics } from '../../hooks/useHaptics';
+import { addSubtask, deleteSubtask, getTaskById, toggleSubtask } from '../../db/queries/tasks';
 
 interface Props {
   task: Task;
@@ -30,21 +31,56 @@ export function TaskCard({ task, onComplete, onTrash, onPress, onLongPress, isSe
   const translateX = useSharedValue(0);
   const overdueFlag = isOverdue(task.dueDate);
   const priorityColors = getPriorityColors(task.priority);
+  const [expanded, setExpanded] = useState(false);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [subtaskInput, setSubtaskInput] = useState('');
+
+  const loadSubtasks = useCallback(() => {
+    const latest = getTaskById(task.id);
+    setSubtasks(latest?.subtasks ?? []);
+  }, [task.id]);
 
   const handleComplete = useCallback(() => {
     haptics.success();
     onComplete(task.id);
-  }, [task.id]);
+  }, [task.id, onComplete]);
 
   const handleTrash = useCallback(() => {
     haptics.medium();
     onTrash(task.id);
-  }, [task.id]);
+  }, [task.id, onTrash]);
 
   const handleLongPress = useCallback(() => {
     haptics.medium();
     onLongPress?.(task.id);
-  }, [task.id]);
+  }, [task.id, onLongPress]);
+
+  const toggleExpanded = () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next) loadSubtasks();
+  };
+
+  const handleAddSubtask = () => {
+    const title = subtaskInput.trim();
+    if (!title) return;
+    addSubtask(task.id, title);
+    setSubtaskInput('');
+    haptics.light();
+    loadSubtasks();
+  };
+
+  const handleToggleSubtask = (sub: Subtask) => {
+    toggleSubtask(sub.id, sub.isCompleted === 1 ? 0 : 1);
+    haptics.light();
+    loadSubtasks();
+  };
+
+  const handleDeleteSubtask = (id: string) => {
+    deleteSubtask(id);
+    haptics.light();
+    loadSubtasks();
+  };
 
   const swipe = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -73,6 +109,9 @@ export function TaskCard({ task, onComplete, onTrash, onPress, onLongPress, isSe
       : translateX.value < -30 ? colors.highBg : colors.card,
   }));
 
+  const actionLabel = task.isCompleted === 1 ? 'Reopen' : 'Done';
+  const completedSubtasks = subtasks.filter(s => s.isCompleted === 1).length;
+  const categoryColor = task.listColor ?? colors.primary;
   const styles = makeStyles(colors);
 
   return (
@@ -81,14 +120,13 @@ export function TaskCard({ task, onComplete, onTrash, onPress, onLongPress, isSe
       exiting={FadeOut.duration(200)}
       style={styles.wrapper}
     >
-      {/* Background action indicators */}
       <Animated.View style={[styles.bgLayer, bgStyle]}>
         <View style={styles.bgLeft}>
-          <Ionicons name="checkmark-circle" size={22} color={colors.low} />
-          <Text style={[styles.bgText, { color: colors.low }]}>Done</Text>
+          <Ionicons name={task.isCompleted === 1 ? 'return-up-back' : 'checkmark-circle'} size={22} color={colors.low} />
+          <Text style={[styles.bgText, { color: colors.low }]}>{actionLabel}</Text>
         </View>
         <View style={styles.bgRight}>
-          <Text style={[styles.bgText, { color: colors.high }]}>Trash</Text>
+          {/* Trash icon only — no text */}
           <Ionicons name="trash" size={22} color={colors.high} />
         </View>
       </Animated.View>
@@ -96,30 +134,48 @@ export function TaskCard({ task, onComplete, onTrash, onPress, onLongPress, isSe
       <GestureDetector gesture={swipe}>
         <Animated.View style={[styles.card, cardStyle, isSelected && { borderColor: colors.primary, borderWidth: 2 }]}>
           {multiSelectMode && (
+            // In multiselect: make the whole card a large pressable target
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={() => onLongPress?.(task.id)}
+            />
+          )}
+
+          {multiSelectMode && (
             <View style={[styles.selectCircle, isSelected && { backgroundColor: colors.primary, borderColor: colors.primary }]}>
               {isSelected && <Ionicons name="checkmark" size={12} color="#fff" />}
             </View>
           )}
 
           {!multiSelectMode && (
-            <TouchableOpacity
-              style={[styles.checkbox, { borderColor: priorityColors.checkBorder }]}
+            // Large Pressable area for checkbox — much more responsive than TouchableOpacity with hitSlop
+            <Pressable
+              style={styles.checkboxArea}
               onPress={handleComplete}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={12}
             >
-              {task.isCompleted === 1 && (
-                <Ionicons name="checkmark" size={12} color={colors.primary} />
-              )}
-            </TouchableOpacity>
+              <View style={[styles.checkbox, { borderColor: priorityColors.checkBorder }]}>
+                {task.isCompleted === 1 && (
+                  <Ionicons name="checkmark" size={12} color={colors.primary} />
+                )}
+              </View>
+            </Pressable>
           )}
 
-          <TouchableOpacity 
-            style={styles.content} 
-            onPress={() => multiSelectMode ? onLongPress?.(task.id) : onPress(task.id)} 
+          <TouchableOpacity
+            style={styles.content}
+            onPress={() => multiSelectMode ? onLongPress?.(task.id) : onPress(task.id)}
             onLongPress={handleLongPress}
+            delayLongPress={200}
             activeOpacity={0.7}
           >
+            <View style={[styles.categoryBadge, { backgroundColor: categoryColor + '18' }]}>
+              <Ionicons name={(task.listIcon ?? 'list') as any} size={10} color={categoryColor} />
+              <Text style={[styles.categoryText, { color: categoryColor }]} numberOfLines={1}>
+                {task.listName ?? 'Category'}
+              </Text>
+            </View>
+
             <View style={styles.titleRow}>
               <Text
                 style={[styles.title, task.isCompleted === 1 && styles.titleDone]}
@@ -131,6 +187,7 @@ export function TaskCard({ task, onComplete, onTrash, onPress, onLongPress, isSe
                 <Ionicons name="repeat" size={12} color={colors.primary} style={{ marginLeft: 4 }} />
               )}
             </View>
+
             <View style={styles.meta}>
               {overdueFlag && (
                 <View style={styles.overdueTag}>
@@ -155,9 +212,51 @@ export function TaskCard({ task, onComplete, onTrash, onPress, onLongPress, isSe
 
           <View style={styles.rightBadges}>
             <PriorityBadge priority={task.priority} />
+            <TouchableOpacity onPress={toggleExpanded} style={styles.expandBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={15} color={colors.textSecondary} />
+            </TouchableOpacity>
           </View>
         </Animated.View>
       </GestureDetector>
+
+      {expanded && (
+        <View style={[styles.subtaskPanel, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+          <Text style={[styles.subtaskHeader, { color: colors.textSecondary }]}>
+            Subtasks {subtasks.length > 0 ? `${completedSubtasks}/${subtasks.length}` : ''}
+          </Text>
+          {subtasks.map(sub => (
+            <TouchableOpacity key={sub.id} style={styles.subtaskRow} onPress={() => handleToggleSubtask(sub)}>
+              <View style={[styles.subCheck, { borderColor: sub.isCompleted ? colors.primary : colors.textTertiary }, sub.isCompleted === 1 && { backgroundColor: colors.primary }]}>
+                {sub.isCompleted === 1 && <Ionicons name="checkmark" size={10} color="#fff" />}
+              </View>
+              <Text style={[styles.subtaskText, { color: colors.text }, sub.isCompleted === 1 && styles.subtaskDone]} numberOfLines={1}>
+                {sub.title}
+              </Text>
+              {/* Trash icon only — no text */}
+              <TouchableOpacity onPress={() => handleDeleteSubtask(sub.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="trash-outline" size={14} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+          <View style={[styles.addSubtask, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}>
+            <Ionicons name="add" size={15} color={colors.textTertiary} />
+            <TextInput
+              style={[styles.addSubtaskInput, { color: colors.text }]}
+              placeholder="Add subtask..."
+              placeholderTextColor={colors.textTertiary}
+              value={subtaskInput}
+              onChangeText={setSubtaskInput}
+              onSubmitEditing={handleAddSubtask}
+              returnKeyType="done"
+            />
+            {subtaskInput.trim() !== '' && (
+              <TouchableOpacity onPress={handleAddSubtask}>
+                <Ionicons name="checkmark" size={16} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
     </Animated.View>
   );
 }
@@ -167,7 +266,7 @@ const makeStyles = (colors: any) => StyleSheet.create({
   bgLayer: {
     ...StyleSheet.absoluteFillObject,
     flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', paddingHorizontal: 16, borderRadius: 12,
+    alignItems: 'flex-start', paddingHorizontal: 16, paddingTop: 18, borderRadius: 12,
   },
   bgLeft: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   bgRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -183,12 +282,24 @@ const makeStyles = (colors: any) => StyleSheet.create({
   selectCircle: {
     width: 20, height: 20, borderRadius: 10, borderWidth: 1.5,
     borderColor: colors.textTertiary, alignItems: 'center', justifyContent: 'center',
+    zIndex: 1,
+  },
+  // Wrapper gives a large tap area; inner view is the visual circle
+  checkboxArea: {
+    width: 36, height: 36, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    marginLeft: -6,
   },
   checkbox: {
     width: 20, height: 20, borderRadius: 6, borderWidth: 1.5,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    alignItems: 'center', justifyContent: 'center',
   },
   content: { flex: 1, minWidth: 0 },
+  categoryBadge: {
+    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginBottom: 4,
+    maxWidth: '95%',
+  },
+  categoryText: { fontSize: 10, fontWeight: '600' },
   titleRow: { flexDirection: 'row', alignItems: 'center' },
   title: { fontSize: 14, color: colors.text, fontWeight: '400', lineHeight: 20, flex: 1 },
   titleDone: { color: colors.textTertiary, textDecorationLine: 'line-through' },
@@ -200,15 +311,28 @@ const makeStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 1, borderRadius: 6,
   },
   overdueText: { fontSize: 10, fontWeight: '500' },
-  workBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6,
-  },
-  workBadgeText: { fontSize: 10, fontWeight: '500' },
   rightBadges: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0 },
-  workBadgeRight: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 7,
+  expandBtn: {
+    width: 24, height: 24, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.backgroundSecondary,
   },
-  workBadgeRightText: { fontSize: 10, fontWeight: '600' },
+  subtaskPanel: {
+    paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12,
+    borderWidth: 1, borderTopWidth: 0, borderBottomLeftRadius: 12, borderBottomRightRadius: 12,
+  },
+  subtaskHeader: { fontSize: 10, fontWeight: '600', letterSpacing: 0.6, marginBottom: 4 },
+  subtaskRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 7 },
+  subCheck: {
+    width: 17, height: 17, borderRadius: 5, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  subtaskText: { flex: 1, fontSize: 13 },
+  subtaskDone: { color: colors.textTertiary, textDecorationLine: 'line-through' },
+  addSubtask: {
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    paddingHorizontal: 10, paddingVertical: 8,
+    borderRadius: 9, borderWidth: 1, marginTop: 4,
+  },
+  addSubtaskInput: { flex: 1, fontSize: 13, padding: 0 },
 });
