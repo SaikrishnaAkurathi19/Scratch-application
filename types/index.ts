@@ -1,21 +1,31 @@
-export type Priority = 'high' | 'medium' | 'low';
-export type Recurrence = 'daily' | 'weekly' | 'monthly' | null;
+export type Priority = 'none' | 'high' | 'medium' | 'low';
+export type Recurrence = 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+export type WorkNature = 'personal' | 'work' | 'shopping' | 'health' | 'other';
+export type SortOrder = 'priority' | 'dueDate' | 'createdAt' | 'title';
 
 export interface Task {
   id: string;
   title: string;
   notes: string | null;
   priority: Priority;
+  workNature: WorkNature;
   listId: string;
-  dueDate: number | null;       // Unix timestamp
-  reminderAt: number | null;    // Unix timestamp
-  reminderId: string | null;    // expo-notifications id
+  dueDate: number | null;
+  reminderAt: number | null;
+  reminderId: string | null;
   recurrence: Recurrence;
-  isCompleted: number;          // 0 or 1
+  recurrenceEndDate: number | null;
+  recurrenceDays: string | null; // JSON array of weekday numbers e.g. "[1,3,5]"
+  isCompleted: number;
   completedAt: number | null;
+  isDeleted: number; // soft delete → trash
+  deletedAt: number | null;
   sortOrder: number;
   createdAt: number;
   updatedAt: number;
+  listName?: string;
+  listColor?: string;
+  listIcon?: string;
 }
 
 export interface Subtask {
@@ -60,6 +70,4 @@ export interface Stats {
 export interface TaskWithExtras extends Task {
   subtasks?: Subtask[];
   tags?: Tag[];
-  listName?: string;
-  listColor?: string;
 }

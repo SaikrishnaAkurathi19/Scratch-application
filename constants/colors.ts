@@ -1,4 +1,5 @@
-export const Colors = {
+// Light mode
+export const LightColors = {
   primary: '#6C63FF',
   primaryLight: '#f0eeff',
   primaryMid: '#ede9ff',
@@ -19,7 +20,7 @@ export const Colors = {
   textSecondary: '#9b9bb4',
   textTertiary: '#bbb',
 
-  background: '#fff',
+  background: '#ffffff',
   backgroundSecondary: '#f8f7ff',
   backgroundTertiary: '#f0eef8',
 
@@ -39,26 +40,81 @@ export const Colors = {
 
   tabInactive: '#ccc',
   tabActive: '#6C63FF',
+  
+  card: '#ffffff',
+  cardBorder: '#f0f0f6',
+  overlay: 'rgba(0,0,0,0.4)',
+  trashBg: '#fff5f5',
 };
 
+// Dark mode
+export const DarkColors = {
+  primary: '#7C74FF',
+  primaryLight: '#1e1a3a',
+  primaryMid: '#252040',
+
+  high: '#FF6B6B',
+  highBg: '#2d1a1a',
+  highBorder: '#5c2020',
+
+  medium: '#FFC947',
+  mediumBg: '#2d2510',
+  mediumBorder: '#5c4a10',
+
+  low: '#4ADE80',
+  lowBg: '#132010',
+  lowBorder: '#1f4a20',
+
+  text: '#f0f0ff',
+  textSecondary: '#8080a0',
+  textTertiary: '#555570',
+
+  background: '#0f0f1a',
+  backgroundSecondary: '#161625',
+  backgroundTertiary: '#1c1c30',
+
+  border: '#252535',
+  borderMid: '#2a2a40',
+
+  success: '#4ADE80',
+  warning: '#FFC947',
+  danger: '#FF6B6B',
+
+  white: '#ffffff',
+  black: '#000000',
+
+  streakGold: '#FFC947',
+  streakGradientStart: '#7C74FF',
+  streakGradientEnd: '#b8aaff',
+
+  tabInactive: '#404060',
+  tabActive: '#7C74FF',
+  
+  card: '#161625',
+  cardBorder: '#252535',
+  overlay: 'rgba(0,0,0,0.7)',
+  trashBg: '#200f0f',
+};
+
+// Default export - will be overridden by theme context
+export let Colors = LightColors;
+
+export function setColorScheme(dark: boolean) {
+  Colors = dark ? DarkColors : LightColors;
+}
+
 export const PriorityColors = {
-  high: {
-    text: Colors.high,
-    bg: Colors.highBg,
-    border: Colors.high,
-    checkBorder: Colors.high,
+  light: {
+    none: { text: LightColors.textSecondary, bg: LightColors.backgroundSecondary, border: LightColors.border, checkBorder: LightColors.border },
+    high: { text: LightColors.high, bg: LightColors.highBg, border: LightColors.high, checkBorder: LightColors.high },
+    medium: { text: LightColors.medium, bg: LightColors.mediumBg, border: LightColors.medium, checkBorder: LightColors.medium },
+    low: { text: LightColors.low, bg: LightColors.lowBg, border: LightColors.low, checkBorder: LightColors.border },
   },
-  medium: {
-    text: Colors.medium,
-    bg: Colors.mediumBg,
-    border: Colors.medium,
-    checkBorder: Colors.medium,
-  },
-  low: {
-    text: Colors.low,
-    bg: Colors.lowBg,
-    border: Colors.low,
-    checkBorder: Colors.border,
+  dark: {
+    none: { text: DarkColors.textSecondary, bg: DarkColors.backgroundSecondary, border: DarkColors.border, checkBorder: DarkColors.border },
+    high: { text: DarkColors.high, bg: DarkColors.highBg, border: DarkColors.high, checkBorder: DarkColors.high },
+    medium: { text: DarkColors.medium, bg: DarkColors.mediumBg, border: DarkColors.medium, checkBorder: DarkColors.medium },
+    low: { text: DarkColors.low, bg: DarkColors.lowBg, border: DarkColors.low, checkBorder: DarkColors.border },
   },
 };
 
@@ -69,6 +125,23 @@ export const ListColors = [
 
 export const ListIcons = [
   'person', 'briefcase', 'cart', 'heart',
-  'home', 'book', 'star', 'rocket',
-  'fitness', 'musical-notes', 'car', 'airplane',
+  'home', 'book', 'star', 'bulb',
+  'fitness', 'school', 'restaurant', 'wallet',
+  'car', 'airplane', 'calendar-outline', 'sparkles',
 ];
+
+export const WorkNatureColors: Record<string, string> = {
+  personal: '#6C63FF',
+  work: '#3B82F6',
+  shopping: '#D97706',
+  health: '#16A34A',
+  other: '#9B9BB4',
+};
+
+export const WorkNatureIcons: Record<string, string> = {
+  personal: 'person',
+  work: 'briefcase',
+  shopping: 'cart',
+  health: 'fitness',
+  other: 'ellipsis-horizontal',
+};
